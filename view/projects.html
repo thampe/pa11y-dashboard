@@ -1,0 +1,29 @@
+{{! Projects index }}
+{{#content "title"}}Projects{{/content}}
+
+<div data-control="task-list">
+
+  <div class="clearfix">
+    <div class="col-md-6 col-md-offset-3 filter-toggle no-js-hide text-center">
+      <label for="task-filter" class="filter-trigger" data-toggle="collapse" data-target="#filter-input">Filter<span class="glyphicon glyphicon-filter"></span>
+      </label>
+      <div id="filter-input" class="collapse">
+        <input class="form-control" id="task-filter" type="text" data-role="input" placeholder="Type filter term (project name)"/>
+      </div>
+    </div>
+  </div>
+
+  {{#deleted}}
+      <div class="col-md-12 clearfix" data-test="alert">
+          <div class="alert alert-info">
+              <button data-dismiss="alert" class="close" type="button" aria-label="Close">×</button>
+              <strong>Deleted</strong>
+              <p>The selected item has been deleted.</p>
+          </div>
+      </div>
+  {{/deleted}}
+
+  {{> projects}}
+
+</div>
+

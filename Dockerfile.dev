@@ -32,7 +32,8 @@ RUN npm i -g nodemon@2
 
 # Install dependencies first (leverage Docker layer cache)
 COPY package*.json ./
-RUN npm ci --no-audit --no-fund
+# Use npm install in dev to pick up local dependency changes without lock updates
+RUN npm install --no-audit --no-fund
 
 # Copy in the rest of the app (dev: will be overridden by volume mount)
 COPY . .

@@ -14,16 +14,54 @@
 // along with Pa11y Dashboard.  If not, see <http://www.gnu.org/licenses/>.
 'use strict';
 
-const presentTask = require('../view/presenter/task');
+const presentProject = require('../view/presenter/project');
 
 module.exports = function index(app) {
 	app.express.get('/', (request, response, next) => {
-		app.webservice.tasks.get({lastres: true}, (error, tasks) => {
+		app.webservice.tasks.get({lastres: true}, async (error, tasks) => {
 			if (error) {
 				return next(error);
 			}
-			response.render('index', {
-				tasks: tasks.map(presentTask),
+
+			let projects = [];
+			let unassignedCount = 0;
+			try {
+				if (app.projects) {
+					const [allProjects, mappedTaskIdsSet, counts] = await Promise.all([
+						app.projects.getAllProjects(),
+						app.projects.getAllMappedTaskIds(),
+						app.projects.getProjectTaskCounts()
+					]);
+					projects = allProjects.map(p => ({
+						name: p.name,
+						slug: p.slug,
+						href: `/project/${p.slug}`,
+						taskCount: counts.get(String(p._id)) || 0
+					}));
+					const totalTasks = tasks.length;
+					unassignedCount = totalTasks - mappedTaskIdsSet.size;
+				}
+			} catch (e) {
+				// ignore store errors for rendering
+			}
+
+			if (!app.projects) {
+				// Fallback: single Unassigned project with all tasks
+				projects = [{name: 'Unassigned', slug: 'unassigned', href: '/project/unassigned', taskCount: tasks.length}];
+			}
+
+			// Add Unassigned if there are any
+			if (unassignedCount > 0) {
+				projects.unshift({
+					name: 'Unassigned',
+					slug: 'unassigned',
+					href: '/project/unassigned',
+					taskCount: unassignedCount
+				});
+			}
+
+			response.render('projects', {
+				projects,
 				deleted: (typeof request.query.deleted !== 'undefined'),
 				isHomePage: true
 			});

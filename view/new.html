@@ -54,6 +54,15 @@ along with Pa11y Dashboard.  If not, see <http://www.gnu.org/licenses/>.
 
 	<div class="form-group clearfix">
 		<div class="row">
+			<div class="col-md-8 col-sm-8 col-xs-10">
+				<label class="control-label" for="new-task-project">Project</label>
+				<input class="form-control" id="new-task-project" type="text" placeholder="E.g. Marketing Site" name="project" value="{{task.project}}"/>
+			</div>
+		</div>
+	</div>
+
+	<div class="form-group clearfix">
+		<div class="row">
 			<div class="col-md-4 col-sm-4 col-xs-6">
 				<label class="control-label" for="new-task-standard">Standard</label>
 				<select data-role="new-task-select" class="form-control" id="new-task-standard" name="standard">

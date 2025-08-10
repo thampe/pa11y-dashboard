@@ -39,8 +39,17 @@ module.exports = function route(app) {
 
 		const newTask = createNewTask(request, parsedActions, parsedHeaders);
 
-		app.webservice.tasks.create(newTask, (error, task) => {
+		app.webservice.tasks.create(newTask, async (error, task) => {
 			if (!error) {
+				// If a project name is provided, persist and map it
+				if (request.body.project && app.projects) {
+					try {
+						const project = await app.projects.ensureProject(request.body.project);
+						await app.projects.addTaskToProject(project._id, task.id);
+					} catch (e) {
+						// Non-fatal; continue
+					}
+				}
 				return response.redirect(`/${task.id}?added`);
 			}
 

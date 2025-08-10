@@ -24,6 +24,7 @@ const morgan = require('morgan');
 const {nanoid} = require('nanoid');
 const http = require('http');
 const pkg = require('./package.json');
+const createProjectStore = require('./lib/project-store');
 
 module.exports = initApp;
 
@@ -40,6 +41,16 @@ function initApp(config, callback) {
 	app.express = express();
 	app.server = http.createServer(app.express);
 	app.webservice = createClient(webserviceUrl);
+
+	// Project store: reuse the webservice DB for convenience
+	try {
+		const mongoUri = (typeof config.webservice === 'object') ? config.webservice.database : process.env.WEBSERVICE_DATABASE;
+		if (mongoUri) {
+			app.projects = createProjectStore(mongoUri);
+		}
+	} catch (err) {
+		// Non-fatal inits; routes will handle absence
+	}
 
 	loadMiddleware(app);
 
@@ -139,6 +150,7 @@ function loadRoutes(app, config) {
 	//  passing mongo the wrong id which would result in
 	//  "ObjectID generation failed." errors (e.g. #277)
 	require('./route/index')(app);
+	require('./route/project')(app);
 	require('./route/result/download')(app);
 
 	if (!config.readonly) {

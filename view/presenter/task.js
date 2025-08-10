@@ -21,6 +21,13 @@ module.exports = presentTask;
 
 function presentTask(task) {
 
+	// Extract project from task name if embedded
+	const meta = extractProjectFromName(task.name || '');
+	if (meta) {
+		task.project = meta.project;
+		task.name = meta.cleanName;
+	}
+
 	// Add additional info
 	task.href = `/${task.id}`;
 	task.hrefDelete = `/${task.id}/delete`;
@@ -47,4 +54,14 @@ function presentTask(task) {
 	}
 
 	return task;
+}
+
+function extractProjectFromName(name) {
+	const match = /\[project:\s*([^\]]+)\]\s*$/i.exec(name);
+	if (!match) {
+		return null;
+	}
+	const project = match[1].trim();
+	const cleanName = name.replace(match[0], '').trim();
+	return {project, cleanName};
 }

@@ -1,0 +1,23 @@
+{{! Project cards }}
+<ul class="list-unstyled clearfix crunch-bottom" id="grid-container">
+
+	{{#unless readonly}}
+		<li class="col-md-4 col-sm-6 task-card add-task">
+			<a class="well task-card-link crunch-bottom" data-role="add-task" href="/new" data-test="add-task">
+				<p class="h3 crunch">Add new URL</p>
+				<p class="supersize-me crunch" aria-hidden="true">+</p>
+			</a>
+		</li>
+	{{/unless}}
+
+	{{#each projects}}
+		<li class="col-md-4 col-sm-6 task-card" data-role="task" data-keywords="{{lowercase name}}">
+			<a class="well task-card-link crunch-bottom" title="View project {{name}}" href="{{href}}">
+				<p class="h3">{{name}}</p>
+				<p class="h4">{{taskCount}} URL{{#ifgtr taskCount 1}}s{{/ifgtr}}</p>
+			</a>
+		</li>
+	{{/each}}
+
+</ul>
+
