@@ -23,7 +23,7 @@ along with Pa11y Dashboard.  If not, see <http://www.gnu.org/licenses/>.
 					<li><a href="/">Dashboard</a></li>
 					{{#if projectSlug}}
 						{{#unless isProjectPage}}
-							<li><a href="/project/{{projectSlug}}">Project: {{projectName}}</a></li>
+							<li><a href="/project/{{projectSlug}}">{{projectName}}</a></li>
 						{{/unless}}
 					{{/if}}
 					{{#if isNewTaskPage}}
@@ -33,7 +33,7 @@ along with Pa11y Dashboard.  If not, see <http://www.gnu.org/licenses/>.
 					<li class="active">{{task.name}}</li>
 					{{/if}}
 					{{#if isProjectPage}}
-						<li class="active">Project: {{projectName}}</li>
+						<li class="active">{{projectName}}</li>
 					{{/if}}
 					{{#if isTaskSubPage}}
 						<li><a href="{{task.href}}">{{task.name}}</a></li>

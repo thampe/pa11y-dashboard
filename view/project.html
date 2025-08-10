@@ -1,6 +1,17 @@
 {{! Project detail: list tasks in a project }}
 {{#content "title"}}Project: {{projectName}}{{/content}}
 
+<div class="col-md-12">
+  <div class="ruled project-stats">
+    <ul class="clearfix list-unstyled floated-list task-stats">
+      <li class="danger" title="Total errors ({{totals.error}})">{{totals.error}}<span class="stat-type">Errors</span></li>
+      <li class="warning" title="Total warnings ({{totals.warning}})">{{totals.warning}}<span class="stat-type">Warnings</span></li>
+      <li class="info last" title="Total notices ({{totals.notice}})">{{totals.notice}}<span class="stat-type">Notices</span></li>
+    </ul>
+  </div>
+  <br/>
+</div>
+
 <div data-control="task-list">
   {{> tasks}}
   {{#unless projectSlug}}

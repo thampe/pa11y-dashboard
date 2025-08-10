@@ -37,37 +37,48 @@ module.exports = function projectRoutes(app) {
 			let projectName = unslug(slug);
 			let projectSlug = slug;
 			let filtered = [];
-			try {
-				if (app.projects) {
-					if (slug === 'unassigned') {
-						const mapped = await app.projects.getAllMappedTaskIds();
-						filtered = tasks.filter(t => !mapped.has(t.id));
-					} else {
+            let totals = {error: 0, warning: 0, notice: 0};
+            try {
+                if (app.projects) {
+                    if (slug === 'unassigned') {
+                        const mapped = await app.projects.getAllMappedTaskIds();
+                        filtered = tasks.filter(t => !mapped.has(t.id));
+                    } else {
 						const project = await app.projects.getProjectBySlug(slug);
 						if (!project) {
 							return next();
 						}
 						projectName = project.name;
-						const ids = await app.projects.getTaskIdsByProject(project._id);
-						const idSet = new Set(ids);
-						filtered = tasks.filter(t => idSet.has(t.id));
-					}
-				} else {
-					// Fallback: show all under Unassigned
-					filtered = tasks;
-				}
-			} catch (e) {
-				return next(e);
-			}
+                        const ids = await app.projects.getTaskIdsByProject(project._id);
+                        const idSet = new Set(ids);
+                        filtered = tasks.filter(t => idSet.has(t.id));
+                    }
+                } else {
+                    // Fallback: show all under Unassigned
+                    filtered = tasks;
+                }
+                // Aggregate totals from last results
+                filtered.forEach(t => {
+                    const c = t.last_result && t.last_result.count;
+                    if (c) {
+                        totals.error += c.error || 0;
+                        totals.warning += c.warning || 0;
+                        totals.notice += c.notice || 0;
+                    }
+                });
+            } catch (e) {
+                return next(e);
+            }
 
-			response.render('project', {
-				tasks: filtered.map(presentTask),
-				isProjectPage: true,
-				projectName,
-				projectSlug: (slug === 'unassigned' ? null : projectSlug)
-			});
-		});
-	});
+            response.render('project', {
+                tasks: filtered.map(presentTask),
+                isProjectPage: true,
+                projectName,
+                projectSlug: (slug === 'unassigned' ? null : projectSlug),
+                totals
+            });
+        });
+    });
 };
 
 function slugify(name) {
