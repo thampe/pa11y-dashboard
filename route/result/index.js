@@ -19,10 +19,19 @@ const presentResult = require('../../view/presenter/result');
 
 module.exports = function resultIndex(app) {
 	app.express.get('/:id/:rid', ({params}, response, next) => {
-		app.webservice.task(params.id).get({}, (error, task) => {
+		app.webservice.task(params.id).get({}, async (error, task) => {
 			if (error) {
 				return next();
 			}
+			let projectSlug = null;
+			let projectName = null;
+			try {
+				if (response.app && response.app.projects) {
+					const proj = await response.app.projects.getProjectForTask(task.id);
+					projectSlug = proj && proj.slug;
+					projectName = proj && proj.name;
+				}
+			} catch (e) {}
 			app.webservice
 				.task(params.id)
 				.result(params.rid)
@@ -33,7 +42,9 @@ module.exports = function resultIndex(app) {
 					response.render('result', {
 						task: presentTask(task),
 						mainResult: presentResult(result),
-						isResultPage: true
+						isResultPage: true,
+						projectSlug,
+						projectName
 					});
 				});
 		});

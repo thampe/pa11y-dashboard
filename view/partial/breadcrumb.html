@@ -21,6 +21,11 @@ along with Pa11y Dashboard.  If not, see <http://www.gnu.org/licenses/>.
 				<h2 id="breadcrumb" class="sr-only">Breadcrumb Navigation</h2>
 				<ol class="breadcrumb">
 					<li><a href="/">Dashboard</a></li>
+					{{#if projectSlug}}
+						{{#unless isProjectPage}}
+							<li><a href="/project/{{projectSlug}}">Project: {{projectName}}</a></li>
+						{{/unless}}
+					{{/if}}
 					{{#if isNewTaskPage}}
 						<li class="active">Add URL</li>
 					{{/if}}

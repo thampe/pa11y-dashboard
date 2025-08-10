@@ -56,6 +56,8 @@ module.exports = function edit(app) {
 				task: presentTask(task),
 				projects,
 				currentProjectSlug,
+				projectSlug: currentProjectSlug,
+				projectName: (projects.find(p => p.selected) || {}).name,
 				isTaskSubPage: true
 			});
 		});
@@ -134,6 +136,8 @@ module.exports = function edit(app) {
 						task,
 						projects,
 						currentProjectSlug,
+						projectSlug: currentProjectSlug,
+						projectName: (projects.find(p => p.selected) || {}).name,
 						isTaskSubPage: true
 					});
 				}

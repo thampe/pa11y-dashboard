@@ -18,13 +18,24 @@ const presentTask = require('../../view/presenter/task');
 
 module.exports = function del(app) {
 	app.express.get('/:id/delete', ({params}, response, next) => {
-		app.webservice.task(params.id).get({}, (error, task) => {
+		app.webservice.task(params.id).get({}, async (error, task) => {
 			if (error) {
 				return next();
 			}
+			let projectSlug = null;
+			let projectName = null;
+			try {
+				if (response.app && response.app.projects) {
+					const proj = await response.app.projects.getProjectForTask(task.id);
+					projectSlug = proj && proj.slug;
+					projectName = proj && proj.name;
+				}
+			} catch (e) {}
 			response.render('task/delete', {
 				task: presentTask(task),
-				isTaskSubPage: true
+				isTaskSubPage: true,
+				projectSlug,
+				projectName
 			});
 		});
 	});

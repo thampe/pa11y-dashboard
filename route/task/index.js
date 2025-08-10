@@ -20,10 +20,19 @@ const presentResultList = require('../../view/presenter/result-list');
 
 module.exports = function taskIndex(app) {
 	app.express.get('/:id', (request, response, next) => {
-		app.webservice.task(request.params.id).get({lastres: true}, (error, task) => {
+		app.webservice.task(request.params.id).get({lastres: true}, async (error, task) => {
 			if (error) {
 				return next();
 			}
+			let projectSlug = null;
+			let projectName = null;
+			try {
+				if (app.projects) {
+					const proj = await app.projects.getProjectForTask(task.id);
+					projectSlug = proj && proj.slug;
+					projectName = proj && proj.name;
+				}
+			} catch (e) {}
 			app.webservice.task(request.params.id).results({}, (webserviceError, results) => {
 				if (webserviceError) {
 					return next(webserviceError);
@@ -38,7 +47,9 @@ module.exports = function taskIndex(app) {
 					ruleIgnored: (typeof request.query['rule-ignored'] !== 'undefined'),
 					ruleUnignored: (typeof request.query['rule-unignored'] !== 'undefined'),
 					hasOneResult: (presentedResults.length < 2),
-					isTaskPage: true
+					isTaskPage: true,
+					projectSlug,
+					projectName
 				});
 			});
 		});
