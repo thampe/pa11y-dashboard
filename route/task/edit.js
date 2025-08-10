@@ -20,7 +20,7 @@ const httpHeaders = require('http-headers');
 
 module.exports = function edit(app) {
 	app.express.get('/:id/edit', (request, response, next) => {
-		app.webservice.task(request.params.id).get({}, (error, task) => {
+		app.webservice.task(request.params.id).get({}, async (error, task) => {
 			if (error) {
 				return next();
 			}
@@ -37,10 +37,25 @@ module.exports = function edit(app) {
 				return standard;
 			});
 			task.actions = (task.actions ? task.actions.join('\n') : '');
+
+			// Load projects for move select
+			let projects = [];
+			let currentProjectSlug = null;
+			try {
+				if (app.projects) {
+					projects = await app.projects.getAllProjects();
+					const cur = await app.projects.getProjectForTask(task.id);
+					currentProjectSlug = cur && cur.slug;
+				}
+			} catch (e) {}
+			projects = projects.map(p => ({name: p.name, slug: p.slug, selected: (currentProjectSlug === p.slug)}));
+
 			response.render('task/edit', {
 				edited: (typeof request.query.edited !== 'undefined'),
 				standards,
 				task: presentTask(task),
+				projects,
+				currentProjectSlug,
 				isTaskSubPage: true
 			});
 		});
@@ -49,7 +64,7 @@ module.exports = function edit(app) {
 	/* eslint-disable complexity */
 	/* eslint-disable max-statements */
 	app.express.post('/:id/edit', (request, response, next) => {
-		app.webservice.task(request.params.id).get({}, (error, task) => {
+		app.webservice.task(request.params.id).get({}, async (error, task) => {
 			if (error) {
 				return next();
 			}
@@ -79,7 +94,7 @@ module.exports = function edit(app) {
 			request.body.hideElements = request.body.hideElements || undefined;
 			request.body.headers = httpHeaders(request.body.headers || '', true);
 
-			app.webservice.task(request.params.id).edit(request.body, webserviceError => {
+			app.webservice.task(request.params.id).edit(request.body, async webserviceError => {
 				if (webserviceError) {
 					task.name = request.body.name;
 					task.ignore = request.body.ignore;
@@ -102,12 +117,34 @@ module.exports = function edit(app) {
 						});
 						return standard;
 					});
+					// reload projects for render
+					let projects = [];
+					let currentProjectSlug = null;
+					try {
+						if (app.projects) {
+							projects = await app.projects.getAllProjects();
+							const cur = await app.projects.getProjectForTask(task.id);
+							currentProjectSlug = cur && cur.slug;
+						}
+					} catch (e) {}
+					projects = projects.map(p => ({name: p.name, slug: p.slug, selected: (currentProjectSlug === p.slug)}));
 					return response.render('task/edit', {
 						webserviceError,
 						standards,
 						task,
+						projects,
+						currentProjectSlug,
 						isTaskSubPage: true
 					});
+				}
+
+				// If a project change was requested, handle mapping
+				if (app.projects && typeof request.body.project === 'string' && request.body.project) {
+					try {
+						await app.projects.moveTaskToProjectBySlug(task.id, request.body.project);
+					} catch (moveError) {
+						return next(moveError);
+					}
 				}
 				response.redirect(`/${request.params.id}/edit?edited`);
 			});

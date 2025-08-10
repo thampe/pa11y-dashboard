@@ -52,25 +52,16 @@ along with Pa11y Dashboard.  If not, see <http://www.gnu.org/licenses/>.
 		</div>
 	</div>
 
+    {{#if projectSlug}}
     <div class="form-group clearfix">
         <div class="row">
             <div class="col-md-8 col-sm-8 col-xs-10">
-                <label class="control-label" for="new-task-project">Project</label>
-                {{#if projects.length}}
-                <select class="form-control" id="new-task-project" name="project" required>
-                    <option value="" disabled {{#unless selectedProject}}selected{{/unless}}>Select a project…</option>
-                    {{#projects}}
-                        <option value="{{slug}}" {{#selected}}selected{{/selected}}>{{name}}</option>
-                    {{/projects}}
-                </select>
-                {{else}}
-                <div class="alert alert-warning">
-                    <p>No projects yet. <a href="/project/new">Create your first project</a> before adding URLs.</p>
-                </div>
-                {{/if}}
+                <label class="control-label">Project</label>
+                <p class="form-control-static"><strong>{{projectName}}</strong></p>
             </div>
         </div>
     </div>
+    {{/if}}
 
 	<div class="form-group clearfix">
 		<div class="row">

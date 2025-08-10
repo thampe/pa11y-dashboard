@@ -19,48 +19,55 @@ const getStandards = require('../data/standards');
 const httpHeaders = require('http-headers');
 
 module.exports = function route(app) {
-    app.express.get('/new', (request, response, next) => {
-        const standards = getStandards().map(
-            standard => {
+    // Pretty URL for adding a URL within a project
+    app.express.get('/:project/new', (request, response, next) => {
+        (async () => {
+            let project = null;
+            if (app.projects) {
+                project = await app.projects.getProjectBySlug(request.params.project);
+                if (!project) {
+                    return next();
+                }
+            } else {
+                return next(new Error('Project store not available'));
+            }
+
+            const standards = getStandards().map(standard => {
                 if (standard.title === 'WCAG2AA') {
                     standard.selected = true;
                 }
                 return standard;
             });
-
-        (async () => {
-            let projects = [];
-            let selectedProject = null;
-            try {
-                if (app.projects) {
-                    projects = await app.projects.getAllProjects();
-                }
-                // Preselect from query ?project=<slug>
-                selectedProject = request.query.project || null;
-                projects = projects.map(p => ({
-                    name: p.name,
-                    slug: p.slug,
-                    selected: (selectedProject && p.slug === selectedProject)
-                }));
-            } catch (e) {}
-
             response.render('new', {
                 standards,
                 isNewTaskPage: true,
-                projects,
-                selectedProject
+                projectSlug: project.slug,
+                projectName: project.name
             });
         })().catch(next);
     });
+    // Legacy /new path: redirect to create project page
+    app.express.get('/new', (request, response) => {
+        response.redirect('/project/new');
+    });
 
-    app.express.post('/new', (request, response, next) => {
+    app.express.post('/new', (request, response) => {
+        // Disallow posting without project context; guide users
+        return response.redirect('/project/new');
+    });
+
+    // Pretty URL POST for adding within a project
+    app.express.post('/:project/new', (request, response, next) => {
+        if (!request.body) {
+            request.body = {};
+        }
+        request.body.project = request.params.project;
         const parsedActions = parseActions(request.body.actions);
         const parsedHeaders = request.body.headers && httpHeaders(request.body.headers, true);
 
         const newTask = createNewTask(request, parsedActions, parsedHeaders);
 
-        // Validate project selection
-        const selectedSlug = (request.body && request.body.project) || '';
+        const selectedSlug = request.body.project || '';
         if (!selectedSlug) {
             return renderNewWithError('Project is required');
         }
@@ -97,30 +104,25 @@ module.exports = function route(app) {
             newTask.headers = request.body.headers;
             respondNew(error, standards, newTask);
         });
-
         function renderNewWithError(message) {
             const standards = getStandards();
             respondNew(message, standards, newTask);
         }
 
         async function respondNew(error, standards, task) {
-            let projects = [];
+            // For implicit project, we render the form bound to a single project
+            let project = null;
             try {
                 if (app.projects) {
-                    projects = await app.projects.getAllProjects();
+                    project = await app.projects.getProjectBySlug(selectedSlug);
                 }
             } catch (e) {}
-            projects = projects.map(p => ({
-                name: p.name,
-                slug: p.slug,
-                selected: (request.body && request.body.project === p.slug)
-            }));
             response.render('new', {
                 error,
                 standards,
                 task,
-                projects,
-                selectedProject: request.body && request.body.project
+                projectSlug: project && project.slug,
+                projectName: project && project.name
             });
         }
     });
