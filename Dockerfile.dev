@@ -1,0 +1,48 @@
+FROM node:18-bullseye
+
+# Install system Chromium and required libraries for Pa11y
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      chromium \
+      fonts-liberation \
+      libatk-bridge2.0-0 \
+      libnss3 \
+      libx11-xcb1 \
+      libxcomposite1 \
+      libxcursor1 \
+      libxdamage1 \
+      libxfixes3 \
+      libxi6 \
+      libxrandr2 \
+      libxrender1 \
+      libxss1 \
+      libxtst6 \
+      libgbm1 \
+      libasound2 && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /usr/src/app
+
+# Avoid Puppeteer attempting to download Chromium during install (arm64-friendly)
+ENV PUPPETEER_SKIP_DOWNLOAD=1 \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+
+# Install dev tools
+RUN npm i -g nodemon@2
+
+# Install dependencies first (leverage Docker layer cache)
+COPY package*.json ./
+RUN npm ci --no-audit --no-fund
+
+# Copy in the rest of the app (dev: will be overridden by volume mount)
+COPY . .
+
+# Default environment
+ENV NODE_ENV=development \
+    PORT=4000
+
+# Expose dashboard port
+EXPOSE 4000
+
+# Use nodemon for live reload in dev
+CMD ["nodemon", "--quiet", "--legacy-watch", "index.js"]

@@ -1,0 +1,17 @@
+{
+  "watch": [
+    "app.js",
+    "index.js",
+    "config.js",
+    "route",
+    "view",
+    "public/js/site.js"
+  ],
+  "ext": "js,json,html,css",
+  "ignore": [
+    "public/js/vendor",
+    "public/css/site.min.css",
+    "node_modules"
+  ]
+}
+

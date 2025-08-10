@@ -1,0 +1,11 @@
+node_modules
+npm-debug.log
+Dockerfile*
+.git
+.github
+.gitignore
+.DS_Store
+public/css/site.min.css
+public/js/site.min.js
+coverage
+

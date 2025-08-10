@@ -1,0 +1,48 @@
+version: "3.9"
+name: pa11y
+
+services:
+  pa11y-mongo:
+    image: mongo:4.4
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  pa11y-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: pa11y-dashboard-dev
+    restart: unless-stopped
+    depends_on:
+      - pa11y-mongo
+    environment:
+      # App
+      - NODE_ENV=development
+      - PORT=4000
+      # Prevent Puppeteer from trying to download Chromium at install time
+      - PUPPETEER_SKIP_DOWNLOAD=1
+      - PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
+      - CHROME_PATH=/usr/bin/chromium
+      # Let the Dashboard start Pa11y Webservice internally and point to Mongo
+      - WEBSERVICE_DATABASE=mongodb://pa11y-mongo/pa11y-webservice
+      - WEBSERVICE_HOST=0.0.0.0
+      - WEBSERVICE_PORT=3000
+      # Optional: disable cron by default in dev (set to a cron string to enable)
+      - WEBSERVICE_CRON=false
+    ports:
+      - "4000:4000"
+      # Expose webservice if you want to hit it directly (optional)
+      - "3000:3000"
+    volumes:
+      - .:/usr/src/app:cached
+      # Keep node_modules inside the container (don’t overwrite by bind mount)
+      - dashboard-node-modules:/usr/src/app/node_modules
+      # Optionally mount a docker-specific dev config that sets Chrome path
+      - ./config/development.docker.json:/usr/src/app/config/development.json:ro
+
+volumes:
+  mongo-data:
+  dashboard-node-modules:
