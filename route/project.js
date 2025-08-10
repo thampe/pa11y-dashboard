@@ -4,6 +4,30 @@
 const presentTask = require('../view/presenter/task');
 
 module.exports = function projectRoutes(app) {
+	// Create project form
+	app.express.get('/project/new', (request, response, next) => {
+		if (!app.projects) {
+			return next(new Error('Project store not available'));
+		}
+		response.render('project-new', {
+			isProjectNewPage: true
+		});
+	});
+
+	// Create project submit
+	app.express.post('/project/new', (request, response, next) => {
+		if (!app.projects) {
+			return next(new Error('Project store not available'));
+		}
+		const name = (request.body && request.body.name || '').trim();
+		if (!name) {
+			return response.render('project-new', {error: 'Project name is required', isProjectNewPage: true});
+		}
+		app.projects.ensureProject(name)
+			.then(project => response.redirect(`/project/${project.slug}?added`))
+			.catch(next);
+	});
+
 	app.express.get('/project/:slug', (request, response, next) => {
 		app.webservice.tasks.get({lastres: true}, async (error, tasks) => {
 			if (error) {
@@ -11,6 +35,7 @@ module.exports = function projectRoutes(app) {
 			}
 			const slug = request.params.slug;
 			let projectName = unslug(slug);
+			let projectSlug = slug;
 			let filtered = [];
 			try {
 				if (app.projects) {
@@ -38,7 +63,8 @@ module.exports = function projectRoutes(app) {
 			response.render('project', {
 				tasks: filtered.map(presentTask),
 				isProjectPage: true,
-				projectName
+				projectName,
+				projectSlug: (slug === 'unassigned' ? null : projectSlug)
 			});
 		});
 	});

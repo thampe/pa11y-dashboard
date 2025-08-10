@@ -19,61 +19,111 @@ const getStandards = require('../data/standards');
 const httpHeaders = require('http-headers');
 
 module.exports = function route(app) {
-	app.express.get('/new', (request, response) => {
-		const standards = getStandards().map(
-			standard => {
-				if (standard.title === 'WCAG2AA') {
-					standard.selected = true;
-				}
-				return standard;
-			});
-		response.render('new', {
-			standards,
-			isNewTaskPage: true
-		});
-	});
+    app.express.get('/new', (request, response, next) => {
+        const standards = getStandards().map(
+            standard => {
+                if (standard.title === 'WCAG2AA') {
+                    standard.selected = true;
+                }
+                return standard;
+            });
 
-	app.express.post('/new', (request, response) => {
-		const parsedActions = parseActions(request.body.actions);
-		const parsedHeaders = request.body.headers && httpHeaders(request.body.headers, true);
+        (async () => {
+            let projects = [];
+            let selectedProject = null;
+            try {
+                if (app.projects) {
+                    projects = await app.projects.getAllProjects();
+                }
+                // Preselect from query ?project=<slug>
+                selectedProject = request.query.project || null;
+                projects = projects.map(p => ({
+                    name: p.name,
+                    slug: p.slug,
+                    selected: (selectedProject && p.slug === selectedProject)
+                }));
+            } catch (e) {}
 
-		const newTask = createNewTask(request, parsedActions, parsedHeaders);
+            response.render('new', {
+                standards,
+                isNewTaskPage: true,
+                projects,
+                selectedProject
+            });
+        })().catch(next);
+    });
 
-		app.webservice.tasks.create(newTask, async (error, task) => {
-			if (!error) {
-				// If a project name is provided, persist and map it
-				if (request.body.project && app.projects) {
-					try {
-						const project = await app.projects.ensureProject(request.body.project);
-						await app.projects.addTaskToProject(project._id, task.id);
-					} catch (e) {
-						// Non-fatal; continue
-					}
-				}
-				return response.redirect(`/${task.id}?added`);
-			}
+    app.express.post('/new', (request, response, next) => {
+        const parsedActions = parseActions(request.body.actions);
+        const parsedHeaders = request.body.headers && httpHeaders(request.body.headers, true);
 
-			const standards = getStandards().map(standard => {
-				if (standard.title === newTask.standard) {
-					standard.selected = true;
-				}
-				standard.rules = standard.rules.map(rule => {
-					if (newTask.ignore.indexOf(rule.name) !== -1) {
-						rule.ignored = true;
-					}
-					return rule;
-				});
-				return standard;
-			});
-			newTask.actions = request.body.actions;
-			newTask.headers = request.body.headers;
-			response.render('new', {
-				error,
-				standards,
-				task: newTask
-			});
-		});
-	});
+        const newTask = createNewTask(request, parsedActions, parsedHeaders);
+
+        // Validate project selection
+        const selectedSlug = (request.body && request.body.project) || '';
+        if (!selectedSlug) {
+            return renderNewWithError('Project is required');
+        }
+
+        app.webservice.tasks.create(newTask, async (error, task) => {
+            if (!error) {
+                if (app.projects) {
+                    try {
+                        const project = await app.projects.getProjectBySlug(selectedSlug);
+                        if (!project) {
+                            return renderNewWithError('Selected project not found');
+                        }
+                        await app.projects.addTaskToProject(project._id, task.id);
+                    } catch (e) {
+                        return next(e);
+                    }
+                }
+                return response.redirect(`/${task.id}?added`);
+            }
+
+            const standards = getStandards().map(standard => {
+                if (standard.title === newTask.standard) {
+                    standard.selected = true;
+                }
+                standard.rules = standard.rules.map(rule => {
+                    if (newTask.ignore.indexOf(rule.name) !== -1) {
+                        rule.ignored = true;
+                    }
+                    return rule;
+                });
+                return standard;
+            });
+            newTask.actions = request.body.actions;
+            newTask.headers = request.body.headers;
+            respondNew(error, standards, newTask);
+        });
+
+        function renderNewWithError(message) {
+            const standards = getStandards();
+            respondNew(message, standards, newTask);
+        }
+
+        async function respondNew(error, standards, task) {
+            let projects = [];
+            try {
+                if (app.projects) {
+                    projects = await app.projects.getAllProjects();
+                }
+            } catch (e) {}
+            projects = projects.map(p => ({
+                name: p.name,
+                slug: p.slug,
+                selected: (request.body && request.body.project === p.slug)
+            }));
+            response.render('new', {
+                error,
+                standards,
+                task,
+                projects,
+                selectedProject: request.body && request.body.project
+            });
+        }
+    });
 };
 
 function parseActions(actions) {

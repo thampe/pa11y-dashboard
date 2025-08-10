@@ -1,0 +1,35 @@
+{{#content "title"}}Create Project{{/content}}
+
+<form class="col-md-12" action="/project/new" method="post" data-test="new-project-form">
+	<div class="legend">
+		<h1 class="h2 crunch-top">Create a new Project</h1>
+	</div>
+
+	{{#error}}
+		<div class="col-md-12 clearfix" data-test="error">
+			<div class="alert alert-danger">
+				<strong>Oh my gosh!</strong>
+				<p>{{.}}</p>
+			</div>
+		</div>
+	{{/error}}
+
+	<div class="form-group clearfix">
+		<div class="row">
+			<div class="col-md-8 col-sm-8 col-xs-10">
+				<label class="control-label" for="new-project-name">Project name</label>
+				<input class="form-control" id="new-project-name" type="text" required placeholder="E.g. Marketing Site" name="name" />
+			</div>
+		</div>
+	</div>
+
+	<div class="form-group clearfix">
+		<div class="row">
+			<div class="col-md-8 col-sm-8 col-xs-10">
+				<button type="submit" class="btn btn-primary">Create Project</button>
+				<a href="/" class="btn btn-default">Cancel</a>
+			</div>
+		</div>
+	</div>
+</form>
+
